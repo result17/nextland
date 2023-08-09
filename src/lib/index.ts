@@ -1,10 +1,7 @@
-import { create } from 'zustand'
-import { immer } from 'zustand/middleware/immer'
-import { type SavedData } from '../service/ShortenerService'
-
-import VercelKVShortenerService from '../service/ShortenerServiceImp'
-
-const service = new VercelKVShortenerService(process.env.KV_REST_API_TOKEN || '', process.env.KV_REST_API_URL || '')
+import shortenService from "@/service/shorten";
+import { SavedData } from "@/shared/types";
+import { create } from "zustand";
+import { immer } from "zustand/middleware/immer";
 
 export enum AppStatus {
   ready,
@@ -13,39 +10,54 @@ export enum AppStatus {
   fail,
 }
 
- interface AppState {
+interface AppState {
   url: string;
   status: AppStatus;
   savedData: SavedData | null;
-  getSavedData: () => Promise<void>,
-  changeUrl: (url: string) => void,
- }
+  getSavedData: () => Promise<void>;
+  changeUrl: (url: string) => void;
+  reset: () => void;
+}
 
 const useAppStore = create<AppState>()(immer(
   (set, get) => ({
-    url: '',
+    url: "",
     status: AppStatus.ready,
     savedData: null,
     changeUrl: (url) => {
-      set((state) => { state.url = url })
+      set((state) => {
+        state.url = url;
+      });
     },
     getSavedData: async () => {
+      const { url, status, reset } = get();
       try {
-        const { url, status } = get()
-        if (status !== AppStatus.ready) throw new Error('Status is not ready')
-        const shortenUrl = service.generateShortenedUrl()
-        set((state) => { state.status = AppStatus.pending })
-        const savedData = await service.addUrlToCache(url, shortenUrl)
+        if (status !== AppStatus.ready) throw new Error("Status is not ready");
         set((state) => {
-          state.status = AppStatus.success
-          state.savedData = savedData
-        })
+          state.status = AppStatus.pending;
+        });
+        const savedData = (await shortenService(url)).data;
+        set((state) => {
+          state.status = AppStatus.success;
+          state.savedData = savedData;
+        });
+        // reset
       } catch (error) {
-        set((state) => { state.status = AppStatus.fail })
-        console.error(error)
+        set((state) => {
+          state.status = AppStatus.fail;
+        });
+        console.error(error);
+      } finally {
+        setTimeout(() => reset(), 2000)
       }
-    }
-  })
-))
+    },
+    reset() {
+      set((state) => {
+        state.status = AppStatus.ready;
+        state.url = "";
+      });
+    },
+  }),
+));
 
-export default useAppStore
+export default useAppStore;

@@ -1,5 +1,5 @@
 {
-  "name": "nextland",
+  "name": "lessland",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -13,12 +13,14 @@
     "@types/react": "18.2.19",
     "@types/react-dom": "18.2.7",
     "@vercel/kv": "^0.2.2",
+    "axios": "^1.4.0",
     "eslint": "8.46.0",
     "eslint-config-next": "13.4.13",
     "next": "13.4.13",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "typescript": "5.1.6",
+    "zod": "^3.21.4",
     "zustand": "^4.4.1"
   },
   "devDependencies": {
