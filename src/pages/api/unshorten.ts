@@ -1,14 +1,12 @@
-import { SavedData } from "@/shared/types";
 import { kv } from "@vercel/kv";
 import { NextApiRequest, NextApiResponse } from "next";
 import { z } from "zod";
-import { generateRandomStr } from "@/shared";
 
 const Payload = z.object({
-  originUrl: z.string(),
+  shortenUrl: z.string(),
 });
 
-type ShortenPayload = z.infer<typeof Payload>;
+type UnShortenPayload = z.infer<typeof Payload>;
 
 export default async function handler(
   request: NextApiRequest,
@@ -22,25 +20,12 @@ export default async function handler(
     response.status(403).end();
     return;
   }
-  // params vaild
   const { success } = Payload.safeParse(request.body);
   if (success) {
-    const { originUrl } = request.body as ShortenPayload;
-
-    const shortenUrl = generateRandomStr();
-    const now = Date.now();
-
-    const savedData: SavedData = {
-      originUrl,
-      shortenUrl,
-      saveTimeStamp: now,
-      expireTimeStamp: now,
-    };
+    const { shortenUrl } = request.body as UnShortenPayload
     try {
-      await kv.set(shortenUrl, JSON.stringify(savedData), {
-        exat: savedData.expireTimeStamp,
-      });
-      response.status(200).json(savedData);
+      const savedData = await kv.get(shortenUrl)
+      response.status(200).json(savedData)
     } catch (error) {
       console.error(error);
       response.status(400).end();
