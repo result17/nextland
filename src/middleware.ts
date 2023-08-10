@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { unShortenServiceByFetch } from "./service/unShorten";
+import { kv } from "@vercel/kv";
+import { SavedData } from "./shared/types";
 
 const reg = /.+\/r\/(\w+)/
 
@@ -10,9 +11,10 @@ export async function middleware(request: NextRequest) {
     // unit test
     const shortenUrl = request.url.replace(reg, '$1')
     if (shortenUrl) {
-      const { originUrl } = await unShortenServiceByFetch(shortenUrl)
-      console.log(originUrl)    
-      return NextResponse.redirect(originUrl);
+      const res = await kv.get<SavedData>(shortenUrl)
+      if (res) {
+        return NextResponse.redirect(res.originUrl);
+      }
     } else {
       throw new Error('ShortenUrl is invalid')
     }
